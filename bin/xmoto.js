@@ -37,12 +37,32 @@
           src: "data/Textures/Riders/" + item + ".png"
         });
       }
+      items = this.remove_duplicate_textures(items);
       this.queue.addEventListener("complete", callback);
       return this.queue.loadManifest(items);
     };
 
     Assets.prototype.get = function(name) {
       return this.queue.getResult(name);
+    };
+
+    Assets.prototype.remove_duplicate_textures = function(array) {
+      var found, image, unique, unique_image, _i, _j, _len, _len1;
+      unique = [];
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        image = array[_i];
+        found = false;
+        for (_j = 0, _len1 = unique.length; _j < _len1; _j++) {
+          unique_image = unique[_j];
+          if (image.id === unique_image.id) {
+            found = true;
+          }
+        }
+        if (!found) {
+          unique.push(image);
+        }
+      }
+      return unique;
     };
 
     return Assets;
@@ -470,34 +490,6 @@
       return this.level.ctx.restore();
     };
 
-    Ghost.prototype.display_left_axle = function() {
-      var angle, axle_thickness, left_axle, position;
-      axle_thickness = 0.09;
-      left_axle = this.frame.left_axle;
-      position = left_axle.position;
-      angle = left_axle.angle;
-      this.level.ctx.save();
-      this.level.ctx.translate(position.x, position.y);
-      this.level.ctx.scale(1, -1);
-      this.level.ctx.rotate(-angle);
-      this.level.ctx.drawImage(this.assets.get('rear_ghost'), 0.0, -axle_thickness / 2, distance, axle_thickness);
-      return this.level.ctx.restore();
-    };
-
-    Ghost.prototype.display_right_axle = function() {
-      var angle, axle_thickness, left_axle, position;
-      axle_thickness = 0.09;
-      left_axle = this.frame.right_axle;
-      position = right_axle.position;
-      angle = right_axle.angle;
-      this.level.ctx.save();
-      this.level.ctx.translate(position.x, position.y);
-      this.level.ctx.scale(1, -1);
-      this.level.ctx.rotate(-angle);
-      this.level.ctx.drawImage(this.assets.get('front_ghost'), 0.0, -axle_thickness / 2, distance, axle_thickness);
-      return this.level.ctx.restore();
-    };
-
     Ghost.prototype.display_torso = function() {
       var angle, position, torso;
       torso = this.frame.torso;
@@ -783,7 +775,8 @@
     Level.prototype.init_canvas = function() {
       this.canvas = $('#game').get(0);
       this.canvas_width = parseFloat(this.canvas.width);
-      return this.canvas_height = parseFloat(this.canvas.height);
+      this.canvas_height = parseFloat(this.canvas.height);
+      return this.ctx.lineWidth = 0.01;
     };
 
     Level.prototype.init_input = function() {
@@ -805,7 +798,10 @@
       return this.world.SetContactListener(listener);
     };
 
-    Level.prototype.display = function() {
+    Level.prototype.display = function(debug) {
+      if (debug == null) {
+        debug = false;
+      }
       if (this.need_to_restart) {
         this.need_to_restart = false;
         this.restart(true);
@@ -813,11 +809,10 @@
       if (!this.canvas) {
         this.init_canvas();
       }
-      $('#game').attr('height', this.canvas_height);
-      this.ctx.translate(400.0, 300.0);
+      this.ctx.save();
+      this.ctx.translate(this.canvas_width / 2, this.canvas_height / 2);
       this.ctx.scale(this.scale.x, this.scale.y);
       this.ctx.translate(-this.moto.position().x, -this.moto.position().y - 0.25);
-      this.ctx.lineWidth = 0.01;
       this.sky.display(this.ctx);
       this.limits.display(this.ctx);
       this.blocks.display(this.ctx);
@@ -826,6 +821,10 @@
       if (this.ghost) {
         this.ghost.display(this.ctx);
       }
+      if (debug) {
+        this.world.DrawDebugData();
+      }
+      this.ctx.restore();
       return this.replay.add_frame();
     };
 
@@ -834,7 +833,7 @@
         save_replay = false;
       }
       if (save_replay) {
-        if ((!this.ghost.replay) || this.ghost.replay.frames_count > this.replay.frames_count) {
+        if ((!this.ghost.replay) || this.ghost.replay.frames_count() > this.replay.frames_count()) {
           this.ghost = new Ghost(this, this.replay.clone());
         }
       }
@@ -982,7 +981,7 @@
         level.input.move_moto();
         level.world.Step(1.0 / 60.0, 10, 10);
         level.world.ClearForces();
-        return level.display();
+        return level.display(false);
       };
       return setInterval(update, 1000 / 60);
     });
@@ -1381,8 +1380,6 @@
       frame = {
         left_wheel: position_2d(moto.left_wheel),
         right_wheel: position_2d(moto.right_wheel),
-        left_axle: position_2d(moto.left_axle),
-        right_axle: position_2d(moto.right_axle),
         body: position_2d(moto.body),
         torso: position_2d(moto.rider.torso),
         upper_leg: position_2d(moto.rider.upper_leg),
