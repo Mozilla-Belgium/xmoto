@@ -237,13 +237,21 @@
     return 0;
   };
 
+  b2Vec2 = Box2D.Common.Math.b2Vec2;
+
   Constants = (function() {
     function Constants() {}
 
     Constants.body = {
       density: 1.5,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.6, -0.3),
+        v2: new b2Vec2(0.6, 0.4),
+        v3: new b2Vec2(-0.7, 0.4),
+        v4: new b2Vec2(-0.7, -0.3)
+      }
     };
 
     Constants.wheels = {
@@ -255,43 +263,144 @@
     Constants.left_axle = {
       density: 1.0,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(-0.10, -0.30),
+        v2: new b2Vec2(-0.25, -0.30),
+        v3: new b2Vec2(-0.80, -0.58),
+        v4: new b2Vec2(-0.65, -0.58)
+      }
     };
 
     Constants.right_axle = {
       density: 1.5,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.58, -0.02),
+        v2: new b2Vec2(0.48, -0.02),
+        v3: new b2Vec2(0.66, -0.58),
+        v4: new b2Vec2(0.76, -0.58)
+      }
+    };
+
+    Constants.left_suspension = {
+      angle: new b2Vec2(0.1, 1),
+      lower_translation: -0.10,
+      upper_translation: 0.20
+    };
+
+    Constants.right_suspension = {
+      angle: new b2Vec2(-0.1, 1),
+      lower_translation: 0.00,
+      upper_translation: 0.20
     };
 
     Constants.torso = {
       density: 0.2,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.25, -0.575),
+        v2: new b2Vec2(0.25, 0.575),
+        v3: new b2Vec2(-0.25, 0.575),
+        v4: new b2Vec2(-0.25, -0.575)
+      },
+      angle: -Math.PI / 20.0
     };
 
     Constants.lower_leg = {
       density: 0.2,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.2, -0.33),
+        v2: new b2Vec2(0.2, 0.33),
+        v3: new b2Vec2(-0.2, 0.33),
+        v4: new b2Vec2(-0.2, -0.33)
+      },
+      angle: -Math.PI / 6.0
     };
 
     Constants.upper_leg = {
       density: 0.2,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.4, -0.14),
+        v2: new b2Vec2(0.4, 0.14),
+        v3: new b2Vec2(-0.4, 0.14),
+        v4: new b2Vec2(-0.4, -0.14)
+      },
+      angle: -Math.PI / 12.0
     };
 
     Constants.lower_arm = {
       density: 0.2,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.28, -0.1),
+        v2: new b2Vec2(0.28, 0.1),
+        v3: new b2Vec2(-0.28, 0.1),
+        v4: new b2Vec2(-0.28, -0.1)
+      },
+      angle: -Math.PI / 10.0
     };
 
     Constants.upper_arm = {
       density: 0.2,
       restitution: 0.5,
-      friction: 1.0
+      friction: 1.0,
+      collision_box: {
+        v1: new b2Vec2(0.125, -0.28),
+        v2: new b2Vec2(0.125, 0.28),
+        v3: new b2Vec2(-0.125, 0.28),
+        v4: new b2Vec2(-0.125, -0.28)
+      },
+      angle: Math.PI / 9.0
+    };
+
+    Constants.ankle = {
+      axe_position: {
+        x: -0.2,
+        y: -0.2
+      }
+    };
+
+    Constants.wrist = {
+      axe_position: {
+        x: 0.25,
+        y: -0.07
+      }
+    };
+
+    Constants.knee = {
+      axe_position: {
+        x: 0.07,
+        y: 0.28
+      }
+    };
+
+    Constants.elbow = {
+      axe_position: {
+        x: 0.05,
+        y: -0.2
+      }
+    };
+
+    Constants.shoulder = {
+      axe_position: {
+        x: -0.12,
+        y: 0.22
+      }
+    };
+
+    Constants.hip = {
+      axe_position: {
+        x: -0.27,
+        y: 0.10
+      }
     };
 
     return Constants;
@@ -669,9 +778,10 @@
     };
 
     Input.prototype.move_moto = function() {
-      var force, moto, v, v_l, v_r;
+      var angle, articulation, articulations, force, moto, rider, torque, v, v_l, v_r, _i, _len, _results;
       force = 24.1;
       moto = this.level.moto;
+      rider = moto.rider;
       if (this.up) {
         moto.left_wheel.ApplyTorque(-force / 3);
       }
@@ -682,12 +792,12 @@
         moto.left_wheel.ApplyTorque((Math.abs(v_l) >= 0.05 ? -v_l : void 0));
       }
       if (this.left) {
-        moto.body.ApplyTorque(force / 2.5);
-        moto.rider.torso.ApplyTorque(force / 2.5);
+        moto.body.ApplyTorque(force / 3.0);
+        moto.rider.torso.ApplyTorque(force / 3.0);
       }
       if (this.right) {
-        moto.body.ApplyTorque(-force / 3);
-        moto.rider.torso.ApplyTorque(-force / 3);
+        moto.body.ApplyTorque(-force / 3.0);
+        moto.rider.torso.ApplyTorque(-force / 3.0);
       }
       if (!this.up && !this.down) {
         v = moto.left_wheel.GetAngularVelocity();
@@ -696,7 +806,19 @@
       moto.left_prismatic_joint.SetMaxMotorForce(8 + Math.abs(800 * Math.pow(moto.left_prismatic_joint.GetJointTranslation(), 2)));
       moto.left_prismatic_joint.SetMotorSpeed(-3 * moto.left_prismatic_joint.GetJointTranslation());
       moto.right_prismatic_joint.SetMaxMotorForce(4 + Math.abs(800 * Math.pow(moto.right_prismatic_joint.GetJointTranslation(), 2)));
-      return moto.right_prismatic_joint.SetMotorSpeed(-3 * moto.right_prismatic_joint.GetJointTranslation());
+      moto.right_prismatic_joint.SetMotorSpeed(-3 * moto.right_prismatic_joint.GetJointTranslation());
+      articulations = [rider.ankle_joint, rider.wrist_joint, rider.knee_joint, rider.elbow_joint, rider.shoulder_joint, rider.hip_joint];
+      if (!this.left && !this.right) {
+        _results = [];
+        for (_i = 0, _len = articulations.length; _i < _len; _i++) {
+          articulation = articulations[_i];
+          angle = articulation.GetJointAngle();
+          torque = angle - Math.PI / 180;
+          articulation.SetMaxMotorTorque(torque / 2);
+          _results.push(articulation.SetMotorSpeed(torque / 2));
+        }
+        return _results;
+      }
     };
 
     return Input;
@@ -1119,7 +1241,7 @@
       fixDef.restitution = Constants.body.restitution;
       fixDef.friction = Constants.body.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.6, -0.3), new b2Vec2(0.6, 0.4), new b2Vec2(-0.7, 0.4), new b2Vec2(-0.7, -0.3)];
+      b2vertices = [Constants.body.collision_box.v1, Constants.body.collision_box.v2, Constants.body.collision_box.v3, Constants.body.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
@@ -1157,7 +1279,7 @@
       fixDef.restitution = Constants.left_axle.restitution;
       fixDef.friction = Constants.left_axle.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(-0.10, -0.30), new b2Vec2(-0.25, -0.30), new b2Vec2(-0.80, -0.58), new b2Vec2(-0.65, -0.58)];
+      b2vertices = [Constants.left_axle.collision_box.v1, Constants.left_axle.collision_box.v2, Constants.left_axle.collision_box.v3, Constants.left_axle.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
@@ -1177,7 +1299,7 @@
       fixDef.restitution = Constants.right_axle.restitution;
       fixDef.friction = Constants.right_axle.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.58, -0.02), new b2Vec2(0.48, -0.02), new b2Vec2(0.66, -0.58), new b2Vec2(0.76, -0.58)];
+      b2vertices = [Constants.right_axle.collision_box.v1, Constants.right_axle.collision_box.v2, Constants.right_axle.collision_box.v3, Constants.right_axle.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
@@ -1206,10 +1328,10 @@
     Moto.prototype.create_left_prismatic_joint = function() {
       var jointDef;
       jointDef = new b2PrismaticJointDef();
-      jointDef.Initialize(this.body, this.left_axle, this.left_axle.GetWorldCenter(), new b2Vec2(0.1, 1));
+      jointDef.Initialize(this.body, this.left_axle, this.left_axle.GetWorldCenter(), Constants.left_suspension.angle);
       jointDef.enableLimit = true;
-      jointDef.lowerTranslation = -0.10;
-      jointDef.upperTranslation = 0.20;
+      jointDef.lowerTranslation = Constants.left_suspension.lower_translation;
+      jointDef.upperTranslation = Constants.left_suspension.upper_translation;
       jointDef.enableMotor = true;
       jointDef.collideConnected = false;
       return this.level.world.CreateJoint(jointDef);
@@ -1218,10 +1340,10 @@
     Moto.prototype.create_right_prismatic_joint = function() {
       var jointDef;
       jointDef = new b2PrismaticJointDef();
-      jointDef.Initialize(this.body, this.right_axle, this.right_axle.GetWorldCenter(), new b2Vec2(-0.1, 1));
+      jointDef.Initialize(this.body, this.right_axle, this.right_axle.GetWorldCenter(), Constants.right_suspension.angle);
       jointDef.enableLimit = true;
-      jointDef.lowerTranslation = -0.0;
-      jointDef.upperTranslation = 0.20;
+      jointDef.lowerTranslation = Constants.right_suspension.lower_translation;
+      jointDef.upperTranslation = Constants.right_suspension.upper_translation;
       jointDef.enableMotor = true;
       jointDef.collideConnected = false;
       return this.level.world.CreateJoint(jointDef);
@@ -1457,8 +1579,8 @@
       world.DestroyBody(this.upper_leg);
       world.DestroyBody(this.lower_arm);
       world.DestroyBody(this.upper_arm);
-      world.DestroyJoint(this.foot_joint);
-      world.DestroyJoint(this.hand_joint);
+      world.DestroyJoint(this.ankle_joint);
+      world.DestroyJoint(this.wrist_joint);
       world.DestroyJoint(this.knee_joint);
       world.DestroyJoint(this.elbow_joint);
       world.DestroyJoint(this.shoulder_joint);
@@ -1486,8 +1608,8 @@
       this.upper_leg = this.create_upper_leg(this.player_start.x - 0.09, this.player_start.y + 1.27);
       this.lower_arm = this.create_lower_arm(this.player_start.x + 0.07, this.player_start.y + 1.52);
       this.upper_arm = this.create_upper_arm(this.player_start.x - 0.17, this.player_start.y + 1.83);
-      this.foot_joint = this.create_foot_joint();
-      this.hand_joint = this.create_hand_joint();
+      this.ankle_joint = this.create_ankle_joint();
+      this.wrist_joint = this.create_wrist_joint();
       this.knee_joint = this.create_knee_joint();
       this.elbow_joint = this.create_elbow_joint();
       this.shoulder_joint = this.create_shoulder_joint();
@@ -1506,12 +1628,12 @@
       fixDef.restitution = Constants.torso.restitution;
       fixDef.friction = Constants.torso.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.25, -0.575), new b2Vec2(0.25, 0.575), new b2Vec2(-0.25, 0.575), new b2Vec2(-0.25, -0.575)];
+      b2vertices = [Constants.torso.collision_box.v1, Constants.torso.collision_box.v2, Constants.torso.collision_box.v3, Constants.torso.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
       bodyDef.position.y = y;
-      bodyDef.angle = -Math.PI / 20;
+      bodyDef.angle = Constants.torso.angle;
       bodyDef.userData = 'rider';
       bodyDef.type = b2Body.b2_dynamicBody;
       body = this.level.world.CreateBody(bodyDef);
@@ -1527,12 +1649,12 @@
       fixDef.restitution = Constants.lower_leg.restitution;
       fixDef.friction = Constants.lower_leg.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.2, -0.33), new b2Vec2(0.2, 0.33), new b2Vec2(-0.2, 0.33), new b2Vec2(-0.2, -0.33)];
+      b2vertices = [Constants.lower_leg.collision_box.v1, Constants.lower_leg.collision_box.v2, Constants.lower_leg.collision_box.v3, Constants.lower_leg.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
       bodyDef.position.y = y;
-      bodyDef.angle = -Math.PI / 6.0;
+      bodyDef.angle = Constants.lower_leg.angle;
       bodyDef.userData = 'rider';
       bodyDef.type = b2Body.b2_dynamicBody;
       body = this.level.world.CreateBody(bodyDef);
@@ -1548,12 +1670,12 @@
       fixDef.restitution = Constants.upper_leg.restitution;
       fixDef.friction = Constants.upper_leg.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.4, -0.14), new b2Vec2(0.4, 0.14), new b2Vec2(-0.4, 0.14), new b2Vec2(-0.4, -0.14)];
+      b2vertices = [Constants.upper_leg.collision_box.v1, Constants.upper_leg.collision_box.v2, Constants.upper_leg.collision_box.v3, Constants.upper_leg.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
       bodyDef.position.y = y;
-      bodyDef.angle = -Math.PI / 12.0;
+      bodyDef.angle = Constants.upper_leg.angle;
       bodyDef.userData = 'rider';
       bodyDef.type = b2Body.b2_dynamicBody;
       body = this.level.world.CreateBody(bodyDef);
@@ -1569,12 +1691,12 @@
       fixDef.restitution = Constants.lower_arm.restitution;
       fixDef.friction = Constants.lower_arm.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.28, -0.1), new b2Vec2(0.28, 0.1), new b2Vec2(-0.28, 0.1), new b2Vec2(-0.28, -0.1)];
+      b2vertices = [Constants.lower_arm.collision_box.v1, Constants.lower_arm.collision_box.v2, Constants.lower_arm.collision_box.v3, Constants.lower_arm.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
       bodyDef.position.y = y;
-      bodyDef.angle = -Math.PI / 10.0;
+      bodyDef.angle = Constants.lower_arm.angle;
       bodyDef.userData = 'rider';
       bodyDef.type = b2Body.b2_dynamicBody;
       body = this.level.world.CreateBody(bodyDef);
@@ -1590,12 +1712,12 @@
       fixDef.restitution = Constants.upper_arm.restitution;
       fixDef.friction = Constants.upper_arm.friction;
       fixDef.filter.groupIndex = -1;
-      b2vertices = [new b2Vec2(0.125, -0.28), new b2Vec2(0.125, 0.28), new b2Vec2(-0.125, 0.28), new b2Vec2(-0.125, -0.28)];
+      b2vertices = [Constants.upper_arm.collision_box.v1, Constants.upper_arm.collision_box.v2, Constants.upper_arm.collision_box.v3, Constants.upper_arm.collision_box.v4];
       fixDef.shape.SetAsArray(b2vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = x;
       bodyDef.position.y = y;
-      bodyDef.angle = Math.PI / 9.0;
+      bodyDef.angle = Constants.upper_arm.angle;
       bodyDef.userData = 'rider';
       bodyDef.type = b2Body.b2_dynamicBody;
       body = this.level.world.CreateBody(bodyDef);
@@ -1604,86 +1726,87 @@
     };
 
     Rider.prototype.set_joint_commons = function(joint) {
-      joint.lowerAngle = Math.PI / 20;
-      joint.upperAngle = Math.PI / 20;
+      joint.lowerAngle = -Math.PI / 15;
+      joint.upperAngle = Math.PI / 180;
       joint.enableLimit = true;
-      return joint.maxMotorTorque = 1.0;
+      joint.maxMotorTorque = 0;
+      return joint.enableMotor = true;
     };
 
-    Rider.prototype.create_foot_joint = function() {
-      var jointDef, position, rotation_axe;
+    Rider.prototype.create_ankle_joint = function() {
+      var axe, jointDef, position;
       position = this.lower_leg.GetWorldCenter();
-      rotation_axe = {
-        x: position.x - 0.2,
-        y: position.y - 0.2
+      axe = {
+        x: position.x + Constants.ankle.axe_position.x,
+        y: position.y + Constants.ankle.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.lower_leg, this.moto.body, rotation_axe);
+      jointDef.Initialize(this.lower_leg, this.moto.body, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
 
     Rider.prototype.create_knee_joint = function() {
-      var jointDef, position, rotation_axe;
+      var axe, jointDef, position;
       position = this.lower_leg.GetWorldCenter();
-      rotation_axe = {
-        x: position.x + 0.07,
-        y: position.y + 0.28
+      axe = {
+        x: position.x + Constants.knee.axe_position.x,
+        y: position.y + Constants.knee.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.lower_leg, this.upper_leg, rotation_axe);
+      jointDef.Initialize(this.lower_leg, this.upper_leg, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
 
-    Rider.prototype.create_hand_joint = function() {
-      var jointDef, position, rotation_axe;
+    Rider.prototype.create_wrist_joint = function() {
+      var axe, jointDef, position;
       position = this.lower_arm.GetWorldCenter();
-      rotation_axe = {
-        x: position.x + 0.25,
-        y: position.y - 0.07
+      axe = {
+        x: position.x + Constants.wrist.axe_position.x,
+        y: position.y + Constants.wrist.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.lower_arm, this.moto.body, rotation_axe);
+      jointDef.Initialize(this.lower_arm, this.moto.body, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
 
     Rider.prototype.create_elbow_joint = function() {
-      var jointDef, position, rotation_axe;
+      var axe, jointDef, position;
       position = this.upper_arm.GetWorldCenter();
-      rotation_axe = {
-        x: position.x + 0.05,
-        y: position.y - 0.2
+      axe = {
+        x: position.x + Constants.elbow.axe_position.x,
+        y: position.y + Constants.elbow.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.upper_arm, this.lower_arm, rotation_axe);
+      jointDef.Initialize(this.upper_arm, this.lower_arm, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
 
     Rider.prototype.create_shoulder_joint = function() {
-      var jointDef, position, rotation_axe;
+      var axe, jointDef, position;
       position = this.upper_arm.GetWorldCenter();
-      rotation_axe = {
-        x: position.x - 0.12,
-        y: position.y + 0.22
+      axe = {
+        x: position.x + Constants.shoulder.axe_position.x,
+        y: position.y + Constants.shoulder.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.torso, this.upper_arm, rotation_axe);
+      jointDef.Initialize(this.torso, this.upper_arm, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
 
     Rider.prototype.create_hip_joint = function() {
-      var jointDef, position, rotation_axe;
+      var axe, jointDef, position;
       position = this.upper_leg.GetWorldCenter();
-      rotation_axe = {
-        x: position.x - 0.27,
-        y: position.y + 0.1
+      axe = {
+        x: position.x + Constants.hip.axe_position.x,
+        y: position.y + Constants.hip.axe_position.y
       };
       jointDef = new b2RevoluteJointDef();
-      jointDef.Initialize(this.torso, this.upper_leg, rotation_axe);
+      jointDef.Initialize(this.torso, this.upper_leg, axe);
       this.set_joint_commons(jointDef);
       return this.level.world.CreateJoint(jointDef);
     };
