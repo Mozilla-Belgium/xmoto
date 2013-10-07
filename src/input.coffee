@@ -41,6 +41,8 @@ class Input
           @right = true
         when 13
           @level.restart()
+        when 32
+          @level.flip_moto()
     )
 
     $(document).on('keyup', (event) =>
@@ -55,16 +57,6 @@ class Input
           @right = false
     )
 
-    $('#left') .on('mousedown', => @left  = true )
-    $('#right').on('mousedown', => @right = true )
-    $('#up')   .on('mousedown', => @up    = true )
-    $('#down') .on('mousedown', => @down  = true )
-
-    $('#left') .on('mouseup', => @left  = false )
-    $('#right').on('mouseup', => @right = false )
-    $('#up')   .on('mouseup', => @up    = false )
-    $('#down') .on('mouseup', => @down  = false )
-
   move_moto: ->
     force = 24.1
     moto  = @level.moto
@@ -72,17 +64,17 @@ class Input
 
     # Accelerate
     if @up
-      moto.left_wheel.ApplyTorque(- force/3)
+      moto.left_wheel.ApplyTorque(- moto.mirror * force/3)
 
     # Brakes
     if @down
       # block right wheel velocity
       v_r = moto.right_wheel.GetAngularVelocity()
-      moto.right_wheel.ApplyTorque((if Math.abs(v_r) >= 0.05 then -v_r))
+      moto.right_wheel.ApplyTorque((if Math.abs(v_r) >= 0.001 then -2*v_r))
 
       # block left wheel velocity
       v_l = moto.left_wheel.GetAngularVelocity()
-      moto.left_wheel.ApplyTorque((if Math.abs(v_l) >= 0.05 then -v_l))
+      moto.left_wheel.ApplyTorque((if Math.abs(v_l) >= 0.001 then -v_l))
 
     # Back wheeling
     if @left
@@ -107,14 +99,15 @@ class Input
     moto.right_prismatic_joint.SetMaxMotorForce(4+Math.abs(800*Math.pow(moto.right_prismatic_joint.GetJointTranslation(), 2)))
     moto.right_prismatic_joint.SetMotorSpeed(-3*moto.right_prismatic_joint.GetJointTranslation())
 
-    articulations = [ rider.ankle_joint, rider.wrist_joint, rider.knee_joint,
-                      rider.elbow_joint, rider.shoulder_joint, rider.hip_joint ]
+    # No more articulation feedback, gravity does its job !
 
-    if not @left and not @right
-      for articulation in articulations
-        angle = articulation.GetJointAngle()
-        torque = angle - Math.PI/180
-
-        articulation.SetMaxMotorTorque(torque/2)
-        articulation.SetMotorSpeed(torque/2)
-
+    #articulations = [ rider.ankle_joint, rider.wrist_joint, rider.knee_joint,
+    #                  rider.elbow_joint, rider.shoulder_joint, rider.hip_joint ]
+    #
+    ## Articulations of the rider ("suspension")
+    #if not @left and not @right
+    #  for articulation in articulations
+    #    angle = articulation.GetJointAngle()
+    #    articulation.SetMaxMotorTorque(angle/2)
+    #    articulation.SetMotorSpeed(angle/2)
+    #

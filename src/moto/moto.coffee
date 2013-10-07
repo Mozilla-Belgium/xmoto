@@ -10,10 +10,11 @@ b2RevoluteJointDef  = Box2D.Dynamics.Joints.b2RevoluteJointDef
 
 class Moto
 
-  constructor: (level) ->
-    @level  = level
-    @assets = level.assets
-    @rider  = new Rider(level, this)
+  constructor: (level, mirror = false) ->
+    @level    = level
+    @assets   = level.assets
+    if mirror then @mirror = -1 else @mirror = 1
+    @rider    = new Rider(level, this)
 
   destroy: ->
     world = @level.world
@@ -47,13 +48,21 @@ class Moto
 
     # Creation of moto parts
     @player_start = @level.entities.player_start
-    @body         = @create_body(@player_start.x, @player_start.y + 1.0)
 
-    @left_wheel   = @create_wheel(@player_start.x - 0.7, @player_start.y + 0.48)
-    @right_wheel  = @create_wheel(@player_start.x + 0.7, @player_start.y + 0.48)
+    @body         = @create_body(@player_start.x + @mirror * Constants.body.position.x,
+                                 @player_start.y + Constants.body.position.y)
 
-    @left_axle    = @create_left_axle( @player_start.x, @player_start.y + 1.0)
-    @right_axle   = @create_right_axle(@player_start.x, @player_start.y + 1.0)
+    @left_wheel   = @create_wheel(@player_start.x - @mirror * Constants.wheels.position.x,
+                                  @player_start.y + Constants.wheels.position.y)
+
+    @right_wheel  = @create_wheel(@player_start.x + @mirror * Constants.wheels.position.x,
+                                  @player_start.y + Constants.wheels.position.y)
+
+    @left_axle    = @create_left_axle( @player_start.x + @mirror * Constants.left_axle.position.x,
+                                       @player_start.y + Constants.left_axle.position.y)
+
+    @right_axle   = @create_right_axle(@player_start.x + @mirror * Constants.right_axle.position.x,
+                                       @player_start.y + Constants.right_axle.position.y)
 
     @left_revolute_joint  = @create_left_revolute_joint()
     @left_prismatic_joint = @create_left_prismatic_joint()
@@ -76,12 +85,7 @@ class Moto
     fixDef.friction    = Constants.body.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.body.collision_box.v1,
-                   Constants.body.collision_box.v2,
-                   Constants.body.collision_box.v3,
-                   Constants.body.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.body.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -137,12 +141,7 @@ class Moto
     fixDef.friction    = Constants.left_axle.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.left_axle.collision_box.v1,
-                   Constants.left_axle.collision_box.v2,
-                   Constants.left_axle.collision_box.v3,
-                   Constants.left_axle.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.left_axle.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -171,12 +170,7 @@ class Moto
     fixDef.friction    = Constants.right_axle.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.right_axle.collision_box.v1,
-                   Constants.right_axle.collision_box.v2,
-                   Constants.right_axle.collision_box.v3,
-                   Constants.right_axle.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.right_axle.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -207,7 +201,8 @@ class Moto
 
   create_left_prismatic_joint: ->
     jointDef = new b2PrismaticJointDef()
-    jointDef.Initialize(@body, @left_axle, @left_axle.GetWorldCenter(), Constants.left_suspension.angle )
+    angle = Constants.left_suspension.angle
+    jointDef.Initialize(@body, @left_axle, @left_axle.GetWorldCenter(), new b2Vec2(@mirror * angle.x, angle.y))
     jointDef.enableLimit      = true
     jointDef.lowerTranslation = Constants.left_suspension.lower_translation
     jointDef.upperTranslation = Constants.left_suspension.upper_translation
@@ -217,7 +212,8 @@ class Moto
 
   create_right_prismatic_joint: ->
     jointDef = new b2PrismaticJointDef()
-    jointDef.Initialize(@body, @right_axle, @right_axle.GetWorldCenter(), Constants.right_suspension.angle )
+    angle = Constants.right_suspension.angle
+    jointDef.Initialize(@body, @right_axle, @right_axle.GetWorldCenter(), new b2Vec2(@mirror * angle.x, angle.y))
     jointDef.enableLimit      = true
     jointDef.lowerTranslation = Constants.right_suspension.lower_translation
     jointDef.upperTranslation = Constants.right_suspension.upper_translation
@@ -260,8 +256,8 @@ class Moto
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror*(-angle))
 
     @level.ctx.drawImage(
       @assets.get('playerbikerbody'), # texture
@@ -274,18 +270,18 @@ class Moto
     @level.ctx.restore()
 
   display_left_axle: ->
-    axle_thickness = 0.09
+    axle_thickness = @mirror * 0.09
 
     # Position
     left_wheel_position = @left_wheel.GetPosition()
     left_wheel_position =
-      x: left_wheel_position.x - axle_thickness/2.0 - 0.00
-      y: left_wheel_position.y - axle_thickness/2.0 + 0.02
+      x: left_wheel_position.x - axle_thickness/2.0
+      y: left_wheel_position.y - 0.025
 
     # Position relative to center of body
     left_axle_position =
-      x: - 0.17
-      y: - 0.30
+      x: -0.17 * @mirror
+      y: -0.30
 
     # Adjusted position depending of rotation of body
     left_axle_adjusted_position = Math2D.rotate_point(left_axle_position, @body.GetAngle(), @position())
@@ -294,13 +290,13 @@ class Moto
     distance = Math2D.distance_between_points(left_wheel_position, left_axle_adjusted_position)
 
     # Angle
-    angle = Math2D.angle_between_points(left_axle_adjusted_position, left_wheel_position) + Math.PI/2
+    angle = Math2D.angle_between_points(left_axle_adjusted_position, left_wheel_position) + @mirror * Math.PI/2
 
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(left_wheel_position.x, left_wheel_position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror*(-angle))
 
     @level.ctx.drawImage(
       @assets.get('rear1'), # texture
@@ -313,17 +309,17 @@ class Moto
     @level.ctx.restore()
 
   display_right_axle: ->
-    axle_thickness = 0.09
+    axle_thickness = @mirror * 0.09
 
     # Position
     right_wheel_position = @right_wheel.GetPosition()
     right_wheel_position =
-      x: right_wheel_position.x + axle_thickness/2.0 - 0.03
-      y: right_wheel_position.y - axle_thickness/2.0
+      x: right_wheel_position.x + axle_thickness/2.0 - @mirror * 0.03
+      y: right_wheel_position.y - 0.045
 
     # Position relative to center of body
     right_axle_position =
-      x: 0.54
+      x: 0.54 * @mirror
       y: 0.025
 
     # Adjusted position depending of rotation of body
@@ -333,13 +329,13 @@ class Moto
     distance = Math2D.distance_between_points(right_wheel_position, right_axle_adjusted_position)
 
     # Angle
-    angle = Math2D.angle_between_points(right_axle_adjusted_position, right_wheel_position) + Math.PI/2
+    angle = Math2D.angle_between_points(right_axle_adjusted_position, right_wheel_position) + @mirror * Math.PI/2
 
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(right_wheel_position.x, right_wheel_position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror*(-angle))
 
     @level.ctx.drawImage(
       @assets.get('front1'), # texture

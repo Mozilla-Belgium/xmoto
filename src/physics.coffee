@@ -63,3 +63,15 @@ class Physics
 
     # Assign fixture to body and add body to 2D world
     @world.CreateBody(bodyDef).CreateFixture(fixDef)
+
+  @create_shape: (fix_def, collision_box, mirror = false) ->
+    if mirror == false
+      b2vertices = [ collision_box.v1, collision_box.v2,
+                     collision_box.v3, collision_box.v4 ]
+    else
+      b2vertices = [ new b2Vec2(-collision_box.v4.x, collision_box.v4.y),
+                     new b2Vec2(-collision_box.v3.x, collision_box.v3.y),
+                     new b2Vec2(-collision_box.v2.x, collision_box.v2.y),
+                     new b2Vec2(-collision_box.v1.x, collision_box.v1.y) ]
+
+    fix_def.shape.SetAsArray(b2vertices)

@@ -14,6 +14,7 @@ class Rider
     @level  = level
     @assets = level.assets
     @moto   = moto
+    @mirror = @moto.mirror
 
   destroy: ->
     world = @level.world
@@ -46,11 +47,20 @@ class Rider
 
     # Creation of moto parts
     @player_start = @level.entities.player_start
-    @torso        = @create_torso(@player_start.x - 0.24, @player_start.y + 1.87)
-    @lower_leg    = @create_lower_leg(@player_start.x + 0.15, @player_start.y + 0.9)
-    @upper_leg    = @create_upper_leg(@player_start.x - 0.09, @player_start.y + 1.27)
-    @lower_arm    = @create_lower_arm(@player_start.x + 0.07, @player_start.y + 1.52)
-    @upper_arm    = @create_upper_arm(@player_start.x - 0.17, @player_start.y + 1.83)
+    @torso        = @create_torso(@player_start.x + @mirror * Constants.torso.position.x,
+                                  @player_start.y + Constants.torso.position.y)
+
+    @lower_leg    = @create_lower_leg(@player_start.x + @mirror * Constants.lower_leg.position.x,
+                                      @player_start.y + Constants.lower_leg.position.y)
+
+    @upper_leg    = @create_upper_leg(@player_start.x + @mirror * Constants.upper_leg.position.x,
+                                      @player_start.y + Constants.upper_leg.position.y)
+
+    @lower_arm    = @create_lower_arm(@player_start.x + @mirror * Constants.lower_arm.position.x,
+                                      @player_start.y + Constants.lower_arm.position.y)
+
+    @upper_arm    = @create_upper_arm(@player_start.x + @mirror * Constants.upper_arm.position.x,
+                                      @player_start.y + Constants.upper_arm.position.y)
 
     @ankle_joint    = @create_ankle_joint()
     @wrist_joint    = @create_wrist_joint()
@@ -72,12 +82,7 @@ class Rider
     fixDef.friction    = Constants.torso.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.torso.collision_box.v1,
-                   Constants.torso.collision_box.v2,
-                   Constants.torso.collision_box.v3,
-                   Constants.torso.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.torso.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -87,7 +92,7 @@ class Rider
     bodyDef.position.y = y
 
     # Assign body angle
-    bodyDef.angle = Constants.torso.angle
+    bodyDef.angle = @mirror * Constants.torso.angle
 
     bodyDef.userData = 'rider'
 
@@ -109,12 +114,7 @@ class Rider
     fixDef.friction    = Constants.lower_leg.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.lower_leg.collision_box.v1,
-                   Constants.lower_leg.collision_box.v2,
-                   Constants.lower_leg.collision_box.v3,
-                   Constants.lower_leg.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.lower_leg.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -124,7 +124,7 @@ class Rider
     bodyDef.position.y = y
 
     # Assign body angle
-    bodyDef.angle = Constants.lower_leg.angle
+    bodyDef.angle = @mirror * Constants.lower_leg.angle
 
     bodyDef.userData = 'rider'
 
@@ -146,12 +146,7 @@ class Rider
     fixDef.friction    = Constants.upper_leg.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.upper_leg.collision_box.v1,
-                   Constants.upper_leg.collision_box.v2,
-                   Constants.upper_leg.collision_box.v3,
-                   Constants.upper_leg.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.upper_leg.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -161,7 +156,7 @@ class Rider
     bodyDef.position.y = y
 
     # Assign body angle
-    bodyDef.angle = Constants.upper_leg.angle
+    bodyDef.angle = @mirror * Constants.upper_leg.angle
 
     bodyDef.userData = 'rider'
 
@@ -183,12 +178,7 @@ class Rider
     fixDef.friction    = Constants.lower_arm.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.lower_arm.collision_box.v1,
-                   Constants.lower_arm.collision_box.v2,
-                   Constants.lower_arm.collision_box.v3,
-                   Constants.lower_arm.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.lower_arm.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -198,7 +188,7 @@ class Rider
     bodyDef.position.y = y
 
     # Assign body angle
-    bodyDef.angle = Constants.lower_arm.angle
+    bodyDef.angle = @mirror * Constants.lower_arm.angle
 
     bodyDef.userData = 'rider'
 
@@ -220,12 +210,7 @@ class Rider
     fixDef.friction    = Constants.upper_arm.friction
     fixDef.filter.groupIndex = -1
 
-    b2vertices = [ Constants.upper_arm.collision_box.v1,
-                   Constants.upper_arm.collision_box.v2,
-                   Constants.upper_arm.collision_box.v3,
-                   Constants.upper_arm.collision_box.v4 ]
-
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, Constants.upper_arm.collision_box, @mirror == -1)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -235,7 +220,7 @@ class Rider
     bodyDef.position.y = y
 
     # Assign body angle
-    bodyDef.angle = Constants.upper_arm.angle
+    bodyDef.angle = @mirror * Constants.upper_arm.angle
 
     bodyDef.userData = 'rider'
 
@@ -248,16 +233,20 @@ class Rider
     body
 
   set_joint_commons: (joint) ->
-    joint.lowerAngle = -Math.PI/15
-    joint.upperAngle =  Math.PI/180
-    joint.enableLimit = true
+    if @mirror == 1
+      joint.lowerAngle     = - Math.PI/15
+      joint.upperAngle     =   Math.PI/180
+    else if @mirror == -1
+      joint.lowerAngle     = - Math.PI/180
+      joint.upperAngle     =   Math.PI/15
+    joint.enableLimit    = true
     joint.maxMotorTorque = 0
-    joint.enableMotor = true
+    joint.enableMotor    = true
 
   create_ankle_joint: ->
     position = @lower_leg.GetWorldCenter()
     axe =
-      x: position.x + Constants.ankle.axe_position.x
+      x: position.x + @mirror * Constants.ankle.axe_position.x
       y: position.y + Constants.ankle.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -268,7 +257,7 @@ class Rider
   create_knee_joint: ->
     position = @lower_leg.GetWorldCenter()
     axe =
-      x: position.x + Constants.knee.axe_position.x
+      x: position.x + @mirror * Constants.knee.axe_position.x
       y: position.y + Constants.knee.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -279,7 +268,7 @@ class Rider
   create_wrist_joint: ->
     position = @lower_arm.GetWorldCenter()
     axe =
-      x: position.x + Constants.wrist.axe_position.x
+      x: position.x + @mirror * Constants.wrist.axe_position.x
       y: position.y + Constants.wrist.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -290,7 +279,7 @@ class Rider
   create_elbow_joint: ->
     position = @upper_arm.GetWorldCenter()
     axe =
-      x: position.x + Constants.elbow.axe_position.x
+      x: position.x + @mirror * Constants.elbow.axe_position.x
       y: position.y + Constants.elbow.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -301,7 +290,7 @@ class Rider
   create_shoulder_joint: ->
     position = @upper_arm.GetWorldCenter()
     axe =
-      x: position.x + Constants.shoulder.axe_position.x
+      x: position.x + @mirror * Constants.shoulder.axe_position.x
       y: position.y + Constants.shoulder.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -312,7 +301,7 @@ class Rider
   create_hip_joint: ->
     position = @upper_leg.GetWorldCenter()
     axe =
-      x: position.x + Constants.hip.axe_position.x
+      x: position.x + @mirror * Constants.hip.axe_position.x
       y: position.y + Constants.hip.axe_position.y
 
     jointDef = new b2RevoluteJointDef()
@@ -330,8 +319,8 @@ class Rider
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror * (-angle))
 
     @level.ctx.drawImage(
       @assets.get('playertorso'), # texture
@@ -353,8 +342,8 @@ class Rider
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror * (-angle))
 
     @level.ctx.drawImage(
       @assets.get('playerlowerleg'), # texture
@@ -376,8 +365,8 @@ class Rider
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror * (-angle))
 
     @level.ctx.drawImage(
       @assets.get('playerupperleg'), # texture
@@ -399,8 +388,8 @@ class Rider
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, 1)
-    @level.ctx.rotate(angle)
+    @level.ctx.scale(1*@mirror, 1)
+    @level.ctx.rotate(@mirror * angle)
 
     @level.ctx.drawImage(
       @assets.get('playerlowerarm'), # texture
@@ -422,8 +411,8 @@ class Rider
     # Draw texture
     @level.ctx.save()
     @level.ctx.translate(position.x, position.y)
-    @level.ctx.scale(1, -1)
-    @level.ctx.rotate(-angle)
+    @level.ctx.scale(1*@mirror, -1)
+    @level.ctx.rotate(@mirror * (-angle))
 
     @level.ctx.drawImage(
       @assets.get('playerupperarm'), # texture

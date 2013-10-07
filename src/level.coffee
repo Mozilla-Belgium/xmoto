@@ -1,3 +1,5 @@
+b2Vec2 = Box2D.Common.Math.b2Vec2
+
 class Level
 
   constructor: ->
@@ -95,9 +97,9 @@ class Level
     @ctx.save()
 
     # initialize position of camera
-    @ctx.translate(@canvas_width/2, @canvas_height/2)                 # Center of canvas
-    @ctx.scale(@scale.x, @scale.y)                                    # Scale (zoom)
-    @ctx.translate(-@moto.position().x, -@moto.position().y - 0.25)   # Camera on moto
+    @ctx.translate(@canvas_width/2, @canvas_height/2)               # Center of canvas
+    @ctx.scale(@scale.x, @scale.y)                                  # Scale (zoom)
+    @ctx.translate(-@moto.position().x, -@moto.position().y - 0.25) # Camera on moto
 
     @sky     .display(@ctx)
     @limits  .display(@ctx)
@@ -113,6 +115,9 @@ class Level
     # Save last step for replay
     @replay.add_frame()
 
+  flip_moto: ->
+    @moto = MotoFlip.execute(@moto)
+
   restart: (save_replay = false) ->
     if save_replay
       if (not @ghost.replay) or @ghost.replay.frames_count() > @replay.frames_count()
@@ -121,5 +126,5 @@ class Level
     @replay = new Replay(this)
 
     @moto.destroy()
-    @moto = new Moto(this)
+    @moto = new Moto(this, false)
     @moto.init()
