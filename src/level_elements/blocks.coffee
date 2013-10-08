@@ -47,9 +47,9 @@ class Blocks
       xml_vertices = $(xml_block).find('vertex')
       for xml_vertex in xml_vertices
         vertex =
-          x:     parseFloat($(xml_vertex).attr('x'))
-          y:     parseFloat($(xml_vertex).attr('y'))
-          edge : $(xml_vertex).attr('edge')
+          x:    parseFloat($(xml_vertex).attr('x'))
+          y:    parseFloat($(xml_vertex).attr('y'))
+          edge: $(xml_vertex).attr('edge').toLowerCase() if $(xml_vertex).attr('edge')
 
         block.vertices.push(vertex)
 
@@ -75,7 +75,10 @@ class Blocks
 
     # Create triangles in box2D
     for triangle in @triangles
-      @level.physics.createPolygon(triangle)
+      @level.physics.create_polygon(triangle, 'ground')
+
+    # Init edges
+    @edges = new Edges(@level, @list)
 
   display: (ctx) ->
     # draw back blocks before front blocks
@@ -96,6 +99,8 @@ class Blocks
       ctx.fill()
       ctx.restore()
 
+    @edges.display(ctx)
+
 # Out of class methods
 triangulate = (blocks) ->
   triangles = []
@@ -104,14 +109,15 @@ triangulate = (blocks) ->
     for vertex in block.vertices
       vertices.push( new poly2tri.Point(block.position.x + vertex.x, block.position.y + vertex.y ))
 
-    triangulation = new poly2tri.SweepContext(vertices, { cloneArrays: true })
-    triangulation.triangulate()
-    set_of_triangles = triangulation.getTriangles()
+    if not Math2D.invalid_shape(vertices)
+      triangulation = new poly2tri.SweepContext(vertices, { cloneArrays: true })
+      triangulation.triangulate()
+      set_of_triangles = triangulation.getTriangles()
 
-    for triangle in set_of_triangles
-      triangles.push([ { x: triangle.points_[0].x, y: triangle.points_[0].y },
-                       { x: triangle.points_[1].x, y: triangle.points_[1].y },
-                       { x: triangle.points_[2].x, y: triangle.points_[2].y } ])
+      for triangle in set_of_triangles
+        triangles.push([ { x: triangle.points_[0].x, y: triangle.points_[0].y },
+                         { x: triangle.points_[1].x, y: triangle.points_[1].y },
+                         { x: triangle.points_[2].x, y: triangle.points_[2].y } ])
   triangles
 
 # http://wiki.xmoto.tuxfamily.org/index.php?title=Others_tips_to_make_levels#Parallax_layers

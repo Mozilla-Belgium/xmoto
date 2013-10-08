@@ -37,7 +37,7 @@ class Physics
 
     @world
 
-  createPolygon: (vertices) ->
+  create_polygon: (vertices, name) ->
     # Create fixture
     fixDef = new b2FixtureDef()
 
@@ -47,10 +47,7 @@ class Physics
     fixDef.friction    = 1.0
 
     # Create polygon
-    b2vertices = []
-    for vertex in vertices
-      b2vertices.push(new b2Vec2(vertex.x, vertex.y))
-    fixDef.shape.SetAsArray(b2vertices)
+    Physics.create_shape(fixDef, vertices)
 
     # Create body
     bodyDef = new b2BodyDef()
@@ -59,19 +56,21 @@ class Physics
     bodyDef.position.x = 0
     bodyDef.position.y = 0
 
+    bodyDef.userData = name
+
     bodyDef.type = b2Body.b2_staticBody
 
     # Assign fixture to body and add body to 2D world
     @world.CreateBody(bodyDef).CreateFixture(fixDef)
 
   @create_shape: (fix_def, collision_box, mirror = false) ->
+    b2vertices = []
+
     if mirror == false
-      b2vertices = [ collision_box.v1, collision_box.v2,
-                     collision_box.v3, collision_box.v4 ]
+      for vertex in collision_box
+        b2vertices.push(new b2Vec2(vertex.x, vertex.y))
     else
-      b2vertices = [ new b2Vec2(-collision_box.v4.x, collision_box.v4.y),
-                     new b2Vec2(-collision_box.v3.x, collision_box.v3.y),
-                     new b2Vec2(-collision_box.v2.x, collision_box.v2.y),
-                     new b2Vec2(-collision_box.v1.x, collision_box.v1.y) ]
+      for vertex in collision_box
+        b2vertices.unshift(new b2Vec2(-vertex.x, vertex.y))
 
     fix_def.shape.SetAsArray(b2vertices)

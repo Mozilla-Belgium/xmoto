@@ -126,7 +126,7 @@ class Rider
     # Assign body angle
     bodyDef.angle = @mirror * Constants.lower_leg.angle
 
-    bodyDef.userData = 'rider'
+    bodyDef.userData = 'rider-lower_leg'
 
     bodyDef.type = b2Body.b2_dynamicBody
 
@@ -240,8 +240,8 @@ class Rider
       joint.lowerAngle     = - Math.PI/180
       joint.upperAngle     =   Math.PI/15
     joint.enableLimit    = true
-    joint.maxMotorTorque = 0
-    joint.enableMotor    = true
+    #joint.maxMotorTorque = 1.0
+    #joint.enableMotor    = true
 
   create_ankle_joint: ->
     position = @lower_leg.GetWorldCenter()
