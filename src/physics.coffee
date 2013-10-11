@@ -44,7 +44,7 @@ class Physics
     fixDef.shape = new b2PolygonShape()
     fixDef.density     = 1.0
     fixDef.restitution = 0.5
-    fixDef.friction    = 1.0
+    fixDef.friction    = 5.0
 
     # Create polygon
     Physics.create_shape(fixDef, vertices)

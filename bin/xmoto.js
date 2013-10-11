@@ -21,7 +21,7 @@
     Constants.wheels = {
       density: 2.0,
       restitution: 0.5,
-      friction: 1.3,
+      friction: 5,
       position: {
         x: 0.70,
         y: 0.48
@@ -1936,7 +1936,7 @@
       fixDef.shape = new b2PolygonShape();
       fixDef.density = 1.0;
       fixDef.restitution = 0.5;
-      fixDef.friction = 1.0;
+      fixDef.friction = 5.0;
       Physics.create_shape(fixDef, vertices);
       bodyDef = new b2BodyDef();
       bodyDef.position.x = 0;
