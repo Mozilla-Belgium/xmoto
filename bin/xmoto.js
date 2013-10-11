@@ -553,27 +553,26 @@
         vertex = _ref[_j];
         vertices.push(new poly2tri.Point(block.position.x + vertex.x, block.position.y + vertex.y));
       }
-      if (!Math2D.invalid_shape(vertices)) {
-        triangulation = new poly2tri.SweepContext(vertices, {
-          cloneArrays: true
-        });
-        triangulation.triangulate();
-        set_of_triangles = triangulation.getTriangles();
-        for (_k = 0, _len2 = set_of_triangles.length; _k < _len2; _k++) {
-          triangle = set_of_triangles[_k];
-          triangles.push([
-            {
-              x: triangle.points_[0].x,
-              y: triangle.points_[0].y
-            }, {
-              x: triangle.points_[1].x,
-              y: triangle.points_[1].y
-            }, {
-              x: triangle.points_[2].x,
-              y: triangle.points_[2].y
-            }
-          ]);
-        }
+      Math2D.not_collinear_vertices(vertices);
+      triangulation = new poly2tri.SweepContext(vertices, {
+        cloneArrays: true
+      });
+      triangulation.triangulate();
+      set_of_triangles = triangulation.getTriangles();
+      for (_k = 0, _len2 = set_of_triangles.length; _k < _len2; _k++) {
+        triangle = set_of_triangles[_k];
+        triangles.push([
+          {
+            x: triangle.points_[0].x,
+            y: triangle.points_[0].y
+          }, {
+            x: triangle.points_[1].x,
+            y: triangle.points_[1].y
+          }, {
+            x: triangle.points_[2].x,
+            y: triangle.points_[2].y
+          }
+        ]);
       }
     }
     return triangles;
@@ -644,7 +643,7 @@
         ctx.save();
         ctx.translate(edge.block.position.x + edge.vertex1.x, edge.block.position.y + edge.vertex1.y);
         ctx.rotate(edge.angle);
-        ctx.scale(1.0 / this.level.scale.x, 1.0 / this.level.scale.y);
+        ctx.scale(1.0 / 100, -1.0 / 100);
         ctx.fillStyle = ctx.createPattern(this.assets.get(edge.theme.file), 'repeat');
         ctx.fill();
         _results.push(ctx.restore());
@@ -1076,7 +1075,7 @@
   $(function() {
     var level;
     level = new Level();
-    level.load_from_file('l1043.lvl');
+    level.load_from_file('l1038.lvl');
     return level.assets.load(function() {
       var update;
       update = function() {
@@ -1443,7 +1442,7 @@
 
     Moto.prototype.display_body = function() {
       var angle, position;
-      position = this.position();
+      position = this.body.GetPosition();
       angle = this.body.GetAngle();
       this.level.ctx.save();
       this.level.ctx.translate(position.x, position.y);
@@ -1465,7 +1464,7 @@
         x: -0.17 * this.mirror,
         y: -0.30
       };
-      left_axle_adjusted_position = Math2D.rotate_point(left_axle_position, this.body.GetAngle(), this.position());
+      left_axle_adjusted_position = Math2D.rotate_point(left_axle_position, this.body.GetAngle(), this.body.GetPosition());
       distance = Math2D.distance_between_points(left_wheel_position, left_axle_adjusted_position);
       angle = Math2D.angle_between_points(left_axle_adjusted_position, left_wheel_position) + this.mirror * Math.PI / 2;
       this.level.ctx.save();
@@ -1488,7 +1487,7 @@
         x: 0.52 * this.mirror,
         y: 0.025
       };
-      right_axle_adjusted_position = Math2D.rotate_point(right_axle_position, this.body.GetAngle(), this.position());
+      right_axle_adjusted_position = Math2D.rotate_point(right_axle_position, this.body.GetAngle(), this.body.GetPosition());
       distance = Math2D.distance_between_points(right_wheel_position, right_axle_adjusted_position);
       angle = Math2D.angle_between_points(right_axle_adjusted_position, right_wheel_position) + this.mirror * Math.PI / 2;
       this.level.ctx.save();
@@ -1919,7 +1918,7 @@
       var context, debugDraw;
       this.scale = level.scale.x;
       this.level = level;
-      this.world = new b2World(new b2Vec2(0, -10), true);
+      this.world = new b2World(new b2Vec2(0, -9.81), true);
       b2Settings.b2_linearSlop = 0.0025;
       context = this.level.ctx;
       debugDraw = new b2DebugDraw();
@@ -2083,12 +2082,19 @@
       };
     };
 
-    Math2D.invalid_shape = function(vertices) {
-      var vertex, _i, _len;
-      for (_i = 0, _len = vertices.length; _i < _len; _i++) {
-        vertex = vertices[_i];
-        vertex.x = vertex.x + 0.5 / 100 - Math.random() / 100;
-        vertex.y = vertex.y + 0.5 / 100 - Math.random() / 100;
+    Math2D.not_collinear_vertices = function(vertices) {
+      var i, size, vertex, _i, _len;
+      size = vertices.length;
+      for (i = _i = 0, _len = vertices.length; _i < _len; i = ++_i) {
+        vertex = vertices[i];
+        if (vertex.x === vertices[(i + 1) % size].x && vertices[(i + 2) % size].x) {
+          vertex.x = vertex.x + 0.001;
+          vertices[(i + 1) % size].x = vertex.x - 0.001;
+        }
+        if (vertex.y === vertices[(i + 1) % size].y && vertices[(i + 2) % size].y) {
+          vertex.y = vertex.y + 0.001;
+          vertices[(i + 1) % size].y = vertex.y - 0.001;
+        }
       }
       return false;
     };
