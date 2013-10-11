@@ -19,7 +19,7 @@ class Constants
   @wheels =
     density:     2.0
     restitution: 0.5
-    friction:    5
+    friction:    1.3
     position:
       x: 0.70
       y: 0.48
