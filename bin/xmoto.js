@@ -1075,7 +1075,7 @@
   $(function() {
     var level;
     level = new Level();
-    level.load_from_file('l3.lvl');
+    level.load_from_file('l1038.lvl');
     return level.assets.load(function() {
       var update;
       update = function() {
