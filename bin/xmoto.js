@@ -1918,7 +1918,7 @@
       var context, debugDraw;
       this.scale = level.scale.x;
       this.level = level;
-      this.world = new b2World(new b2Vec2(0, -9.81), true);
+      this.world = new b2World(new b2Vec2(0, -7), true);
       b2Settings.b2_linearSlop = 0.0025;
       context = this.level.ctx;
       debugDraw = new b2DebugDraw();
