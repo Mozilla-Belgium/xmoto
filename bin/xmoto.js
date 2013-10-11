@@ -1075,7 +1075,7 @@
   $(function() {
     var level;
     level = new Level();
-    level.load_from_file('l1038.lvl');
+    level.load_from_file('l3.lvl');
     return level.assets.load(function() {
       var update;
       update = function() {
@@ -1918,7 +1918,7 @@
       var context, debugDraw;
       this.scale = level.scale.x;
       this.level = level;
-      this.world = new b2World(new b2Vec2(0, -7), true);
+      this.world = new b2World(new b2Vec2(0, -9.81), true);
       b2Settings.b2_linearSlop = 0.0025;
       context = this.level.ctx;
       debugDraw = new b2DebugDraw();
