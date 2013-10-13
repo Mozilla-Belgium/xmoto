@@ -17,7 +17,7 @@ class Physics
   constructor: (level) ->
     @scale = level.scale.x
     @level = level
-    @world = new b2World(new b2Vec2(0, -9.81), true) # gravity vector, and doSleep
+    @world = new b2World(new b2Vec2(0, -Constants.gravity), true) # gravity vector, and doSleep
 
     # Double default precision between wheel and ground
     b2Settings.b2_linearSlop = 0.0025;
@@ -56,7 +56,8 @@ class Physics
     bodyDef.position.x = 0
     bodyDef.position.y = 0
 
-    bodyDef.userData = name
+    bodyDef.userData =
+        name: name
 
     bodyDef.type = b2Body.b2_staticBody
 
