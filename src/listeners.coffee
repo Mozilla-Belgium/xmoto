@@ -17,16 +17,22 @@ class Listeners
         # Strawberries
         if (a == 'moto' and b == 'strawberry') || (a == 'rider' and b == 'strawberry') || (a == 'rider-lower_leg' and b == 'strawberry')
           strawberry = if a == 'strawberry' then contact.GetFixtureA() else contact.GetFixtureB()
-          strawberry.GetBody().GetUserData().entity.display = false
+          entity = strawberry.GetBody().GetUserData().entity
+          if entity.display
+            entity.display = false
+            createjs.Sound.play('PickUpStrawberry')
 
         # End of level
         if (a == 'moto' and b == 'end_of_level') || (a == 'rider' and b == 'end_of_level')
           if @level.got_strawberries()
+            createjs.Sound.play('EndOfLevel')
             @level.need_to_restart = true
 
         # Fall of rider
         else if a == 'rider' and b == 'ground'
           moto.dead = true
+
+          createjs.Sound.play('Headcrash')
 
           @level.world.DestroyJoint(moto.rider.ankle_joint)
           @level.world.DestroyJoint(moto.rider.wrist_joint)
